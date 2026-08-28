@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -29,6 +32,70 @@ func main() {
 			"service": serviceName,
 			"status": "ok",
 		})
+	})
+	
+	http.HandleFunc("/work", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("[%s] received /work request", serviceName)
+
+		result := WorkResponse{
+			Service: serviceName,
+			Status: "ok",
+		}
+
+		// Leaf service: nothing more to call
+		if downstream == "" {
+			writeJSON(w, http.StatusOK, result)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+
+		// get the work endpoint of downstream url
+		url := strings.TrimRight(downstream, "/") + "/work"
+
+		// create new request to send to downstream service
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			result.Status = "error"
+			result.Error = err.Error()
+			writeJSON(w, http.StatusInternalServerError, result)
+			return
+		}
+
+		// attempt to send request
+		resp, err := client.Do(req)
+		if err != nil {
+			result.Status = "error"
+			result.Error = err.Error()
+
+			log.Printf("[%s] downstream error: %v", serviceName, err)
+
+			writeJSON(w, http.StatusBadGateway, result)
+			return
+		}
+		defer resp.Body.Close()
+
+		// attempt to decode response 
+		var child WorkResponse
+		if err := json.NewDecoder(resp.Body).Decode(&child); err != nil {
+			result.Status = "error"
+			result.Error = fmt.Sprintf("invalid downstream response: %v", err)
+
+			writeJSON(w, http.StatusBadGateway, result)
+			return
+		}
+
+		result.Downstream = &child
+
+		// checks for bad response
+		if resp.StatusCode >= 400 {
+			result.Status = "error"
+			writeJSON(w, http.StatusBadGateway, result)
+			return
+		}
+
+		writeJSON(w, http.StatusOK, result)
 	}) 
 }
 
