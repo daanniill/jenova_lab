@@ -96,7 +96,12 @@ func main() {
 		}
 
 		writeJSON(w, http.StatusOK, result)
-	}) 
+	})
+	
+	log.Printf("starting %s on : %s downstream=%q", serviceName, port, downstream,)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getEnv(key, fallback string) string {
