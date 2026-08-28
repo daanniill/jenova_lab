@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -22,6 +24,12 @@ func main() {
 		Timeout: 3 * time.Second,
 	}
 
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request){
+		writeJSON(w, http.StatusOK, map[string]string {
+			"service": serviceName,
+			"status": "ok",
+		})
+	}) 
 }
 
 func getEnv(key, fallback string) string {
@@ -30,4 +38,13 @@ func getEnv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		log.Printf("failed to encode respone: %v", err)
+	}
 }
