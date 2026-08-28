@@ -27,19 +27,19 @@ func main() {
 		Timeout: 3 * time.Second,
 	}
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request){
-		writeJSON(w, http.StatusOK, map[string]string {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{
 			"service": serviceName,
-			"status": "ok",
+			"status":  "ok",
 		})
 	})
-	
+
 	http.HandleFunc("/work", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] received /work request", serviceName)
 
 		result := WorkResponse{
 			Service: serviceName,
-			Status: "ok",
+			Status:  "ok",
 		}
 
 		// Leaf service: nothing more to call
@@ -76,7 +76,7 @@ func main() {
 		}
 		defer resp.Body.Close()
 
-		// attempt to decode response 
+		// attempt to decode response
 		var child WorkResponse
 		if err := json.NewDecoder(resp.Body).Decode(&child); err != nil {
 			result.Status = "error"
@@ -97,8 +97,8 @@ func main() {
 
 		writeJSON(w, http.StatusOK, result)
 	})
-	
-	log.Printf("starting %s on : %s downstream=%q", serviceName, port, downstream,)
+
+	log.Printf("starting %s on : %s downstream=%q", serviceName, port, downstream)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
