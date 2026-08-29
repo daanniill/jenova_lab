@@ -1,3 +1,8 @@
+// Command service implements a small HTTP service used to demonstrate a
+// chain of downstream calls. Each instance exposes a /health endpoint and a
+// /work endpoint; if DOWNSTREAM_URL is set, /work calls the same endpoint on
+// the downstream service and nests its response, forming a chain that ends
+// at a leaf node with no configured downstream.
 package main
 
 import (
@@ -11,6 +16,10 @@ import (
 	"time"
 )
 
+// WorkResponse is the JSON body returned by the /work endpoint. When the
+// service has a configured downstream, Downstream holds that service's own
+// WorkResponse, so a chain of calls produces a nested structure ending at
+// the leaf node.
 type WorkResponse struct {
 	Service    string        `json:"service"`
 	Status     string        `json:"status"`
