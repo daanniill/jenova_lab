@@ -19,7 +19,7 @@ func main() {
 	switch os.Args[1] {
 	case "up":
 		upCommand(os.Args[2:])
-	
+
 	//lists containers that are running
 	case "status":
 		runDocker("compose", "-f", composeFile, "ps")
@@ -63,7 +63,7 @@ func generateCompose(count int) error {
 	for i := 1; i <= count; i++ {
 		name := fmt.Sprintf("service-%d", i)
 		port := 8000 + i
-		
+
 		fmt.Fprintf(&b, "	%s:\n", name)
 
 		b.WriteString("		build:\n")
@@ -77,7 +77,7 @@ func generateCompose(count int) error {
 		// Every service except the last points to the next service.
 		if i < count {
 			next := fmt.Sprintf("service-%d", i+1)
-			fmt.Fprintf(&b,"			DOWNSTREAM_URL: http://%s:8080\n",next)
+			fmt.Fprintf(&b, "			DOWNSTREAM_URL: http://%s:8080\n", next)
 		}
 
 		b.WriteString("    ports:\n")
