@@ -1,4 +1,4 @@
-package lab
+package main
 
 import (
 	"flag"
@@ -64,24 +64,24 @@ func generateCompose(count int) error {
 		name := fmt.Sprintf("service-%d", i)
 		port := 8000 + i
 
-		fmt.Fprintf(&b, "	%s:\n", name)
+		fmt.Fprintf(&b, "  %s:\n", name)
 
-		b.WriteString("		build:\n")
-		b.WriteString("			context: .\n")
-		b.WriteString("     dockerfile: service/Dockerfile\n")
+		b.WriteString("    build:\n")
+		b.WriteString("       context: .\n")
+		b.WriteString("       dockerfile: service/Dockerfile\n\n")
 
-		b.WriteString("		environment:\n")
-		fmt.Fprintf(&b, "			SERVICE_NAME: %s\n", name)
-		b.WriteString("			PORT: 8080\n")
+		b.WriteString("    environment:\n")
+		fmt.Fprintf(&b, "       SERVICE_NAME: %s\n", name)
+		b.WriteString("       PORT: 8080\n")
 
 		// Every service except the last points to the next service.
 		if i < count {
 			next := fmt.Sprintf("service-%d", i+1)
-			fmt.Fprintf(&b, "			DOWNSTREAM_URL: http://%s:8080\n", next)
+			fmt.Fprintf(&b, "       DOWNSTREAM_URL: http://%s:8080\n\n", next)
 		}
 
 		b.WriteString("    ports:\n")
-		fmt.Fprintf(&b, "      - \"%d:8080\"\n", port)
+		fmt.Fprintf(&b, "       - \"%d:8080\"\n", port)
 	}
 
 	// 0644 grants read/write permissions to owner, and read-only to others
