@@ -12,20 +12,23 @@ const composeFile = "compose.generated.yaml"
 
 func main() {
 	if len(os.Args) < 2 {
+		usage()
 		os.Exit(1)
 	}
 
 	switch os.Args[1] {
 	case "up":
-		fmt.Print("docker up")
-
+		upCommand(os.Args[2:])
+	
+	//lists containers that are running
 	case "status":
-		fmt.Print("docker status")
+		runDocker("compose", "-f", composeFile, "ps")
 
 	case "down":
-		fmt.Print("docker down")
+		runDocker("compose", "-f", composeFile, "down")
 
 	default:
+		usage()
 		os.Exit(1)
 	}
 }
@@ -41,8 +44,11 @@ func upCommand(args []string) {
 		os.Exit(1)
 	}
 
-	// create a compose file
-	fmt.Printf("generate a compose file")
+	// generate a compose file
+	if err := generateCompose(*services); err != nil {
+		fmt.Printf("failed to generate compose file: %v\n", err)
+		os.Exit(1)
+	}
 
 	fmt.Printf("Starting %d-service chain...\n", *services)
 
@@ -95,4 +101,12 @@ func runDocker(args ...string) {
 		fmt.Printf("docker command failed: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func usage() {
+	fmt.Println(`Usage:
+
+  lab up [--services N]
+  lab status
+  lab down`)
 }
