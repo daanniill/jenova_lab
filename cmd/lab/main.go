@@ -27,6 +27,16 @@ func main() {
 
 	case "down":
 		runDocker("compose", "-f", composeFile, "down")
+	
+	case "kill":
+		if len(os.Args) != 3 {
+			fmt.Println("usage: lab kill <service>")
+			os.Exit(1)
+		}
+		killService(os.Args[2])
+	
+	case "reset":
+		resetLab()
 
 	default:
 		usage()
@@ -62,6 +72,15 @@ func killService(name string){
 		os.Exit(1)
 	}
 
+	runDocker("compose", "-f", "compose.generated.yaml", "kill", name)
+}
+
+// Recreate everything.
+	//
+	// This:
+	//   1. starts killed containers again
+	//   2. clears injected in-memory latency
+func resetLab() {
 	runDocker("compose", "-f", "compose.generated.yaml", "up", "-d", "--force-recreate")
 }
 
