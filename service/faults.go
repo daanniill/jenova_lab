@@ -33,6 +33,7 @@ func latencyFaultHandler(w http.ResponseWriter, r *http.Request) {
 
 	if delay < 0 {
 		http.Error(w, "duration cannot be negative", http.StatusBadRequest)
+		return
 	}
 
 	injectedLatency.Store(int64(delay))
