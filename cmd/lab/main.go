@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -55,6 +56,15 @@ func upCommand(args []string) {
 	runDocker("compose", "-f", composeFile, "up", "--build", "-d")
 }
 
+func killService(name string){ 
+	if _, err := servicePort(name); err != nil {
+		fmt.Printf("failed to process service name: %v\n", err)
+		os.Exit(1)
+	}
+
+	runDocker("compose", "-f", "compose.generated.yaml", "up", "-d", "--force-recreate")
+}
+
 func generateCompose(count int) error {
 	var b strings.Builder
 
@@ -101,6 +111,24 @@ func runDocker(args ...string) {
 		fmt.Printf("docker command failed: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// service-x -> localhost:800x
+func servicePort(name string) (int, error) {
+	const prefix = "service-"
+
+	if !strings.HasPrefix(name, prefix) {
+		return 0, fmt.Errorf("invalid service name %q", name)
+	}
+
+	numberString := strings.TrimPrefix(name, prefix)
+
+	number, err := strconv.Atoi(numberString)
+	if err != nil || number < 1 {
+		return 0, fmt.Errorf("invalid service name %q", name)
+	}
+
+	return 8000 + number, nil
 }
 
 func usage() {
