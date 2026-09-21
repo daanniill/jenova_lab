@@ -13,7 +13,8 @@ and tracing/logging setups.
 ## Build
 
 ```sh
-go build -o bin/lab ./cmd/lab
+make build                       # or: go build -o bin/lab ./cmd/lab
+make run ARGS="up --services 4"  # build, then run bin/lab with those args
 ```
 
 ## Usage
