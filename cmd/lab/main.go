@@ -31,23 +31,23 @@ func main() {
 
 	case "down":
 		runDocker("compose", "-f", composeFile, "down")
-	
+
 	case "kill":
 		if len(os.Args) != 3 {
 			fmt.Println("usage: lab kill <service>")
 			os.Exit(1)
 		}
 		killService(os.Args[2])
-	
+
 	case "reset":
 		resetLab()
-	
+
 	case "latency":
-    if len(os.Args) != 4 {
-        fmt.Println("usage: lab latency <service> <duration>")
-        os.Exit(1)
-    }
-    setLatency(os.Args[2], os.Args[3])
+		if len(os.Args) != 4 {
+			fmt.Println("usage: lab latency <service> <duration>")
+			os.Exit(1)
+		}
+		setLatency(os.Args[2], os.Args[3])
 
 	default:
 		usage()
@@ -77,13 +77,13 @@ func upCommand(args []string) {
 	runDocker("compose", "-f", composeFile, "up", "--build", "-d")
 }
 
-func killService(name string) { 
+func killService(name string) {
 	if _, err := servicePort(name); err != nil {
 		fmt.Printf("failed to process service name: %v\n", err)
 		os.Exit(1)
 	}
 
-	runDocker("compose", "-f", "compose.generated.yaml", "kill", name)
+	runDocker("compose", "-f", composeFile, "kill", name)
 }
 
 func setLatency(name string, rawDuration string) {
@@ -95,12 +95,12 @@ func setLatency(name string, rawDuration string) {
 
 	duration, err := time.ParseDuration(rawDuration)
 	if err != nil {
-		fmt.Printf("invalid duration %q, %v; try 500ms, 1s, 1500ms", rawDuration, err)
+		fmt.Printf("invalid duration %q, %v; try 500ms, 1s, 1500ms\n", rawDuration, err)
 		os.Exit(1)
 	}
 
 	if duration < 0 {
-		fmt.Printf("duration must be positive")
+		fmt.Printf("duration must be positive\n")
 		os.Exit(1)
 	}
 
@@ -109,7 +109,7 @@ func setLatency(name string, rawDuration string) {
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
-		fmt.Printf("post request failed: %v", err)
+		fmt.Printf("post request failed: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -119,7 +119,7 @@ func setLatency(name string, rawDuration string) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("could not reach %s: %v", name, err)
+		fmt.Printf("could not reach %s: %v\n", name, err)
 		os.Exit(1)
 	}
 	defer resp.Body.Close()
@@ -127,19 +127,20 @@ func setLatency(name string, rawDuration string) {
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("%s returned %s: %s", name, resp.Status, strings.TrimSpace(string(body)))
+		fmt.Printf("%s returned %s: %s\n", name, resp.Status, strings.TrimSpace(string(body)))
+		os.Exit(1)
 	}
 
 	fmt.Printf("%s: latency = %s\n", name, duration)
 }
 
 // Recreate everything.
-	//
-	// This:
-	//   1. starts killed containers again
-	//   2. clears injected in-memory latency
+//
+// This:
+//  1. starts killed containers again
+//  2. clears injected in-memory latency
 func resetLab() {
-	runDocker("compose", "-f", "compose.generated.yaml", "up", "-d", "--force-recreate")
+	runDocker("compose", "-f", composeFile, "up", "-d", "--force-recreate")
 }
 
 func generateCompose(count int) error {
@@ -213,5 +214,8 @@ func usage() {
 
   lab up [--services N]
   lab status
-  lab down`)
+  lab down
+  lab kill <service>
+  lab reset
+  lab latency <service> <duration>`)
 }
