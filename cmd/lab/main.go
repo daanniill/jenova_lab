@@ -3,10 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const composeFile = "compose.generated.yaml"
@@ -37,6 +41,13 @@ func main() {
 	
 	case "reset":
 		resetLab()
+	
+	case "latency":
+    if len(os.Args) != 4 {
+        fmt.Println("usage: lab latency <service> <duration>")
+        os.Exit(1)
+    }
+    setLatency(os.Args[2], os.Args[3])
 
 	default:
 		usage()
@@ -66,13 +77,60 @@ func upCommand(args []string) {
 	runDocker("compose", "-f", composeFile, "up", "--build", "-d")
 }
 
-func killService(name string){ 
+func killService(name string) { 
 	if _, err := servicePort(name); err != nil {
 		fmt.Printf("failed to process service name: %v\n", err)
 		os.Exit(1)
 	}
 
 	runDocker("compose", "-f", "compose.generated.yaml", "kill", name)
+}
+
+func setLatency(name string, rawDuration string) {
+	port, err := servicePort(name)
+	if err != nil {
+		fmt.Printf("failed to process service name: %v\n", err)
+		os.Exit(1)
+	}
+
+	duration, err := time.ParseDuration(rawDuration)
+	if err != nil {
+		fmt.Printf("invalid duration %q, %v; try 500ms, 1s, 1500ms", rawDuration, err)
+		os.Exit(1)
+	}
+
+	if duration < 0 {
+		fmt.Printf("duration must be positive")
+		os.Exit(1)
+	}
+
+	// Send post request to service to apply latency
+	endpoint := fmt.Sprintf("http://localhost:%d/fault/latency?duration=%s", port, url.QueryEscape(duration.String()))
+
+	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
+	if err != nil {
+		fmt.Printf("post request failed: %v", err)
+		os.Exit(1)
+	}
+
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("could not reach %s: %v", name, err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("%s returned %s: %s", name, resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	fmt.Printf("%s: latency = %s\n", name, duration)
 }
 
 // Recreate everything.

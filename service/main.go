@@ -46,6 +46,8 @@ func main() {
 	http.HandleFunc("/work", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] received /work request", serviceName)
 
+		applyInjectedLatency()
+
 		result := WorkResponse{
 			Service: serviceName,
 			Status:  "ok",
@@ -106,6 +108,8 @@ func main() {
 
 		writeJSON(w, http.StatusOK, result)
 	})
+
+	http.HandleFunc("/fault/latency", latencyFaultHandler)
 
 	log.Printf("starting %s on : %s downstream=%q", serviceName, port, downstream)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
